@@ -1,8 +1,9 @@
-from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 def preprocess_col_names(df):
     """
@@ -81,13 +82,34 @@ def visualize_tsne_2d(df, feature_cols, perplexity=25):
     tsne_subset['tsne-2d-two'] = tsne_results[:,1]
 
     # plot tsne in 2d space
-    fig = plt.figure(figsize=(16,10))
+    fig = plt.figure(figsize=(16, 10))
     ax = fig.gca()
     sns.scatterplot(
                     x="tsne-2d-one", y="tsne-2d-two",
                     data=tsne_subset,
                     alpha=0.3, ax=ax
                    )
+    ax.set_title('TSNE for perplexity = '+str(perplexity))
+    ax.set_xlabel('TSNE dimension 1')
+    ax.set_ylabel('TSNE dimension 2')
+
+
+def drop_features_vif(X, thresh=5.0):
+    variables = list(range(X.shape[1]))
+    dropped = True
+    while dropped:
+        dropped = False
+        vif = [variance_inflation_factor(X.iloc[:, variables].values, ix)
+               for ix in range(X.iloc[:, variables].shape[1])]
+
+        maxloc = vif.index(max(vif))
+        if max(vif) > thresh:
+            print('dropping \'' + X.iloc[:, variables].columns[maxloc] +
+                  '\' at index: ' + str(maxloc))
+            del variables[maxloc]
+            dropped = True
+    return X.iloc[:, variables]
+
 
 # TODO PCA code if required
 # pca_all = PCA()
